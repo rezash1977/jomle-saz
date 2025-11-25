@@ -1,0 +1,29 @@
+{
+  "name": "جمله‌ساز - بازی آموزشی",
+  "short_name": "جمله‌ساز",
+  "description": "بازی آموزشی برای یادگیری ساخت جمله در فارسی و انگلیسی",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "games"],
+  "lang": "fa",
+  "dir": "rtl"
+}
+
