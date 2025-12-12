@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, SentenceData, Language, Difficulty } from '../types';
-import { generateGameLevel, generateSpeech } from '../services/localAiService';
+import { generateGameLevel, generateSpeech } from '../services/geminiService';
 import { playSuccessSound, playErrorSound, playClickSound, playPCMFromBase64 } from '../services/audioService';
 import { t } from '../services/translations';
 import { Button } from './ui/Button';
@@ -17,44 +17,44 @@ interface GameLevelProps {
 
 export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language, onUpdateScore, onBack }) => {
   const [levelData, setLevelData] = useState<SentenceData | null>(null);
-  const [availableWords, setAvailableWords] = useState<{ id: string, text: string }[]>([]);
-  const [selectedWords, setSelectedWords] = useState<{ id: string, text: string }[]>([]);
+  const [availableWords, setAvailableWords] = useState<{id: string, text: string}[]>([]);
+  const [selectedWords, setSelectedWords] = useState<{id: string, text: string}[]>([]);
   const [gameState, setGameState] = useState<'loading' | 'playing' | 'success' | 'failure'>('loading');
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-
+  
   const HINT_COST = 5;
 
   useEffect(() => {
     loadNewLevel();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadNewLevel = async () => {
     setGameState('loading');
     setFeedbackMsg('');
     setSelectedWords([]);
-
+    
     const data = await generateGameLevel(difficulty, language);
     setLevelData(data);
-
+    
     // Shuffle words for the bank
     const shuffled = [...data.words]
       .map((word, idx) => ({ id: `${word}-${idx}-${Math.random()}`, text: word }))
       .sort(() => Math.random() - 0.5);
-
+      
     setAvailableWords(shuffled);
     setGameState('playing');
   };
 
-  const handleSelectWord = (wordObj: { id: string, text: string }) => {
+  const handleSelectWord = (wordObj: {id: string, text: string}) => {
     if (gameState !== 'playing') return;
     playClickSound();
     setAvailableWords(prev => prev.filter(w => w.id !== wordObj.id));
     setSelectedWords(prev => [...prev, wordObj]);
   };
 
-  const handleDeselectWord = (wordObj: { id: string, text: string }) => {
+  const handleDeselectWord = (wordObj: {id: string, text: string}) => {
     if (gameState !== 'playing') return;
     playClickSound();
     setSelectedWords(prev => prev.filter(w => w.id !== wordObj.id));
@@ -72,11 +72,11 @@ export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language
 
     setIsAudioLoading(true);
     let hintUsed = false;
-
+    
     try {
       // Attempt Gemini TTS first (works best for Persian)
       const audioBase64 = await generateSpeech(levelData.correctSentence);
-
+      
       if (audioBase64) {
         onUpdateScore(-HINT_COST);
         hintUsed = true;
@@ -86,10 +86,10 @@ export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language
         // Deduct points as we are providing the service via browser
         onUpdateScore(-HINT_COST);
         hintUsed = true;
-
+        
         const utterance = new SpeechSynthesisUtterance(levelData.correctSentence);
         utterance.lang = language === 'fa' ? 'fa-IR' : 'en-US';
-        utterance.rate = 0.8;
+        utterance.rate = 0.8; 
         window.speechSynthesis.speak(utterance);
       }
     } catch (e) {
@@ -110,7 +110,7 @@ export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language
       playSuccessSound();
       setGameState('success');
       setFeedbackMsg(t(language, 'successMsg'));
-
+      
       // Calculate points based on difficulty
       let points = 10;
       if (difficulty === 'medium') points = 20;
@@ -154,7 +154,7 @@ export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language
           <Home className="w-6 h-6" />
         </button>
         <div className="flex gap-2">
-          <div className="bg-indigo-50 px-3 py-1 rounded-full text-indigo-600 font-bold text-xs uppercase border border-indigo-100">
+           <div className="bg-indigo-50 px-3 py-1 rounded-full text-indigo-600 font-bold text-xs uppercase border border-indigo-100">
             {t(language, difficulty)}
           </div>
           <div className="bg-amber-100 px-4 py-1 rounded-full text-amber-700 font-bold text-sm flex items-center gap-1 border border-amber-200">
@@ -167,25 +167,25 @@ export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language
       {/* Target Area (Sentence Line) */}
       <div className="flex-1 flex flex-col items-center justify-center relative">
         <div className="w-full flex justify-between items-center mb-2 px-2">
-          <h2 className="text-gray-500 text-sm font-medium">{t(language, 'sentencePlaceholder')}</h2>
-
-          {gameState === 'playing' && (
-            <button
-              onClick={handleAudioHint}
-              disabled={user.score < HINT_COST || isAudioLoading}
-              className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold hover:bg-amber-200 disabled:opacity-50 disabled:grayscale transition-colors"
-            >
-              {isAudioLoading ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Volume2 className="w-3 h-3" />
-              )}
-              {t(language, 'hintCost')}
-            </button>
-          )}
+            <h2 className="text-gray-500 text-sm font-medium">{t(language, 'sentencePlaceholder')}</h2>
+            
+            {gameState === 'playing' && (
+              <button 
+                onClick={handleAudioHint}
+                disabled={user.score < HINT_COST || isAudioLoading}
+                className="flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold hover:bg-amber-200 disabled:opacity-50 disabled:grayscale transition-colors"
+              >
+                {isAudioLoading ? (
+                   <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                   <Volume2 className="w-3 h-3" />
+                )}
+                {t(language, 'hintCost')}
+              </button>
+            )}
         </div>
-
-        <div
+        
+        <div 
           dir={contentDir}
           className="w-full min-h-[120px] bg-white rounded-2xl border-2 border-dashed border-indigo-200 p-4 flex flex-wrap gap-2 items-center justify-center content-center transition-colors shadow-inner"
         >
@@ -208,24 +208,24 @@ export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language
             ))}
           </AnimatePresence>
         </div>
-
+        
         {/* Feedback Message */}
         <div className="h-12 mt-4 flex items-center justify-center">
-          {gameState === 'success' && (
-            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-emerald-600 font-bold flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-lg">
-              <CheckCircle2 className="w-5 h-5" /> {feedbackMsg}
-            </motion.div>
-          )}
-          {gameState === 'failure' && (
-            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-red-500 font-bold bg-red-50 px-4 py-2 rounded-lg">
-              {feedbackMsg}
-            </motion.div>
-          )}
-          {gameState === 'playing' && feedbackMsg && (
-            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className="text-amber-600 font-bold text-sm bg-amber-50 px-4 py-2 rounded-lg">
-              {feedbackMsg}
-            </motion.div>
-          )}
+            {gameState === 'success' && (
+                <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-emerald-600 font-bold flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-lg">
+                    <CheckCircle2 className="w-5 h-5" /> {feedbackMsg}
+                </motion.div>
+            )}
+             {gameState === 'failure' && (
+                <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-red-500 font-bold bg-red-50 px-4 py-2 rounded-lg">
+                     {feedbackMsg}
+                </motion.div>
+            )}
+             {gameState === 'playing' && feedbackMsg && (
+                <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className="text-amber-600 font-bold text-sm bg-amber-50 px-4 py-2 rounded-lg">
+                     {feedbackMsg}
+                </motion.div>
+            )}
         </div>
       </div>
 
@@ -253,36 +253,36 @@ export const GameLevel: React.FC<GameLevelProps> = ({ user, difficulty, language
       {/* Controls */}
       <div className="pb-6 grid grid-cols-2 gap-4">
         {gameState === 'playing' && (
-          <>
-            <Button variant="secondary" onClick={resetCurrentLevel}>
-              <RotateCcw className="w-5 h-5" />
-              {t(language, 'restart')}
-            </Button>
-            <Button
-              variant="primary"
-              onClick={checkAnswer}
-              disabled={availableWords.length > 0 && selectedWords.length === 0}
-            >
-              <CheckCircle2 className="w-5 h-5" />
-              {t(language, 'check')}
-            </Button>
-          </>
+            <>
+                <Button variant="secondary" onClick={resetCurrentLevel}>
+                    <RotateCcw className="w-5 h-5" />
+                    {t(language, 'restart')}
+                </Button>
+                <Button 
+                    variant="primary" 
+                    onClick={checkAnswer} 
+                    disabled={availableWords.length > 0 && selectedWords.length === 0}
+                >
+                    <CheckCircle2 className="w-5 h-5" />
+                    {t(language, 'check')}
+                </Button>
+            </>
         )}
-
+        
         {gameState === 'failure' && (
-          <Button variant="secondary" fullWidth className="col-span-2" onClick={resetCurrentLevel}>
-            <RotateCcw className="w-5 h-5" />
-            {t(language, 'retry')}
-          </Button>
+             <Button variant="secondary" fullWidth className="col-span-2" onClick={resetCurrentLevel}>
+                <RotateCcw className="w-5 h-5" />
+                {t(language, 'retry')}
+            </Button>
         )}
 
         {gameState === 'success' && (
-          <Button variant="success" fullWidth className="col-span-2" onClick={loadNewLevel}>
-            {language === 'fa'
-              ? <><ArrowRight className="w-5 h-5" /> {t(language, 'nextLevel')}</>
-              : <>{t(language, 'nextLevel')} <ArrowRight className="w-5 h-5" /></>
-            }
-          </Button>
+             <Button variant="success" fullWidth className="col-span-2" onClick={loadNewLevel}>
+                {language === 'fa' 
+                  ? <><ArrowRight className="w-5 h-5" /> {t(language, 'nextLevel')}</>
+                  : <>{t(language, 'nextLevel')} <ArrowRight className="w-5 h-5" /></>
+                }
+            </Button>
         )}
       </div>
     </div>
