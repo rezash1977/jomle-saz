@@ -79,8 +79,7 @@ export const GameLevel: React.FC<GameLevelProps> = ({
 
     try {
       // درخواست به سرویس لوکال
-      const newPuzzle = await localAiService.getScrambledSentence();
-      
+      const newPuzzle = await localAiService.getScrambledSentence(language, difficulty);      
       if (newPuzzle) {
         setupGameFromPuzzle(newPuzzle);
       } else {
